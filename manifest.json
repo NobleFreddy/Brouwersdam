@@ -1,0 +1,15 @@
+{
+  "name": "Brouwersdam Sticker-Jagd",
+  "short_name": "Sticker-Jagd",
+  "description": "Fünf Tage, fünf Sticker, ein Sieger – Codes eingeben, Tagesrätsel lösen, Punkte sammeln.",
+  "start_url": "index.html",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#0a1a2c",
+  "theme_color": "#0a1a2c",
+  "lang": "de",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

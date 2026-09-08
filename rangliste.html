@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rangliste – Brouwersdam Sticker-Jagd</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <meta name="theme-color" content="#0a1a2c" />
+</head>
+<body data-page="rangliste">
+  <header id="site-header" class="site-header"></header>
+
+  <section class="section">
+    <div class="eyebrow">Punktestand</div>
+    <h1 style="font-size:26px; margin-top:6px;">Rangliste</h1>
+
+    <div class="card" style="margin-top:20px;" id="leaderboard">
+      <div class="empty-state">Lädt …</div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <a href="index.html" class="btn btn-ghost btn-sm">Zurück zur Übersicht</a>
+    </div>
+  </section>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/sfx.js"></script>
+  <script src="js/rangliste.js"></script>
+</body>
+</html>
