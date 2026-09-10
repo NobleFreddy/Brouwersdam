@@ -105,10 +105,11 @@ function renderTheorieQuiz(container, onFinish) {
       <div class="tq-row-scene-box">
         <svg class="tq-row-scene" viewBox="0 0 200 220" id="tq-row-svg">
           <rect x="6" y="6" width="188" height="208" rx="14" class="tq-row-water" />
-          <g transform="translate(100 26) rotate(${q.windFrom})">
-            <path d="M0,-14 L6,4 L0,-1.5 L-6,4 Z" class="tq-row-wind" />
+          <g transform="translate(100 30) rotate(${q.windFrom})">
+            <line x1="0" y1="-22" x2="0" y2="10" class="tq-row-wind-shaft" />
+            <path d="M0,-24 L8,-8 L0,-12.5 L-8,-8 Z" class="tq-row-wind" />
           </g>
-          <text x="100" y="16" class="tq-row-wind-label">Wind</text>
+          <text x="100" y="12" class="tq-row-wind-label">Wind</text>
           ${q.surfers.map((s) => rowSurferSvg(s.x, s.y, s.heading, s.id, "")).join("")}
         </svg>
       </div>

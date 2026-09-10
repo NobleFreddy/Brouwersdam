@@ -12,6 +12,10 @@ function renderFinaleMission(container, config, callbacks) {
   const SVG_NS = "http://www.w3.org/2000/svg";
   const SCENE_W = 320, SCENE_H = 440;
   const MAX_SPEED = 78; // px/s bei optimalem Winkel/Trimm/Zug
+  // Zoomt die Szene heraus (Weltkoordinaten -> Bildschirm), ohne Spawn-Distanzen, Speed
+  // oder Kollisionsradien (alles weiterhin in Weltkoordinaten) anzufassen. Ohne diesen Faktor
+  // tauchen NPCs (Spawn-Distanz bis 220) oft außerhalb des sichtbaren Ausschnitts auf.
+  const WORLD_SCALE = 0.55;
 
   const normalizeAngle = (a) => ((a % 360) + 360) % 360;
   const normalizeSigned = (a) => { const x = normalizeAngle(a); return x > 180 ? x - 360 : x; };
@@ -61,7 +65,7 @@ function renderFinaleMission(container, config, callbacks) {
       <div class="ws-hud-item"><span class="ws-hud-label">Punkte</span><span class="ws-hud-val accent" id="fin-score">–</span></div>
       <div class="ws-hud-item"><span class="ws-hud-label">Fortschritt</span><span class="ws-hud-val" id="fin-progress">0%</span></div>
     </div>
-    <div class="ws-hud" id="fin-hud2" hidden style="grid-template-columns:1fr 1fr;">
+    <div class="ws-hud" id="fin-hud2" hidden style="grid-template-columns:1fr 1fr 1fr;">
       <div class="ws-hud-item">
         <span class="ws-hud-label">Wind</span>
         <span class="ws-hud-wind-row">
@@ -76,6 +80,13 @@ function renderFinaleMission(container, config, callbacks) {
           <span class="ws-hud-val" id="fin-heading-val">–</span>
         </span>
       </div>
+      <div class="ws-hud-item">
+        <span class="ws-hud-label">Ziel</span>
+        <span class="ws-hud-wind-row">
+          <svg class="ws-wind-arrow" id="fin-goal-arrow" viewBox="0 0 24 24" style="fill:var(--success);"><path d="M12 2 L17 14 L12 10.5 L7 14 Z"/></svg>
+          <span class="ws-hud-val" id="fin-goal-val">–</span>
+        </span>
+      </div>
     </div>
     <div class="ws-stage" id="fin-stage"></div>
   `;
@@ -88,6 +99,8 @@ function renderFinaleMission(container, config, callbacks) {
   els.windVal = container.querySelector("#fin-wind-val");
   els.headingArrow = container.querySelector("#fin-heading-arrow");
   els.headingVal = container.querySelector("#fin-heading-val");
+  els.goalArrow = container.querySelector("#fin-goal-arrow");
+  els.goalVal = container.querySelector("#fin-goal-val");
   els.stage = container.querySelector("#fin-stage");
 
   let playerHeading = 0;
@@ -180,9 +193,35 @@ function renderFinaleMission(container, config, callbacks) {
 
   function startMission() {
     state.stagePhase = "mission";
-    Sfx.startWind(state.windStrength / 5);
-    startClock();
-    renderMission();
+    renderMissionBriefing();
+  }
+
+  // Kurze Missionsbeschreibung vor dem eigentlichen Start: Ziel, Bedienung und HUD werden
+  // einmal erklärt, bevor die Uhr läuft - Lesezeit hier kostet also keine Missionszeit.
+  function renderMissionBriefing() {
+    els.stage.innerHTML = `
+      <div class="ws-heading">
+        <h3>Hauptmission</h3>
+        <p>Ein einziges Ziel, keine Zwischenetappen: die pulsierende Boje mit der Aufschrift „Ziel".</p>
+      </div>
+      <div class="fin-briefing">
+        <ul class="fin-briefing-list">
+          <li><span class="fin-briefing-icon">🕹️</span> Joystick unten: Richtung lenken, Auslenkung = Tempo.</li>
+          <li><span class="fin-briefing-icon">🧭</span> Der grüne „Ziel"-Pfeil oben zeigt immer zur Boje, egal wie du gerade stehst.</li>
+          <li><span class="fin-briefing-icon">📊</span> „Fortschritt" oben füllt sich, je näher du der Boje kommst.</li>
+          <li><span class="fin-briefing-icon">🗺️</span> Die kleine Karte oben rechts zeigt deine Position auf der gesamten Strecke.</li>
+          <li><span class="fin-briefing-icon">⛵</span> Andere Windsurfer, Boote und Kiter kreuzen deinen Kurs – Vorfahrt beachten.</li>
+          <li><span class="fin-briefing-icon">💨</span> Bei einer Böe schnell auf den Knopf tippen, bevor die Zeit abläuft.</li>
+        </ul>
+        <button class="btn btn-primary btn-block" id="fin-briefing-start" type="button">Los geht's!</button>
+      </div>
+    `;
+    els.stage.querySelector("#fin-briefing-start").addEventListener("click", () => {
+      Sfx.click();
+      Sfx.startWind(state.windStrength / 5);
+      startClock();
+      renderMission();
+    });
   }
 
   function renderMission() {
@@ -192,7 +231,10 @@ function renderFinaleMission(container, config, callbacks) {
         <p>Steuere zum Zielpunkt. Wind, Ereignisse und Vorfahrt entscheiden über den besten Kurs.</p>
       </div>
       <div class="fin-scene-wrap">
-        <div class="fin-mini-map"><svg viewBox="0 0 60 60" id="fin-minimap"><rect width="60" height="60" class="fin-minimap-bg"/><circle cx="30" cy="55" r="2.2" class="fin-minimap-goal-line"/><g id="fin-minimap-goal"></g><circle id="fin-minimap-player" cx="30" cy="55" r="2.6" class="fin-minimap-player"/></svg></div>
+        <div class="fin-mini-map">
+          <span class="fin-mini-map-tag">Karte</span>
+          <svg viewBox="0 0 60 60" id="fin-minimap"><rect width="60" height="60" class="fin-minimap-bg"/><line x1="30" y1="54" x2="30" y2="6" class="fin-minimap-route"/><g id="fin-minimap-goal"></g><circle id="fin-minimap-player" cx="30" cy="55" r="2.6" class="fin-minimap-player"/></svg>
+        </div>
         <svg class="ws-scene" viewBox="0 0 ${SCENE_W} ${SCENE_H}" id="fin-svg">
           <rect x="0" y="0" width="${SCENE_W}" height="${SCENE_H}" class="ws-water" />
           <g id="fin-world"></g>
@@ -222,6 +264,7 @@ function renderFinaleMission(container, config, callbacks) {
       x: WORLD_START.x, y: WORLD_START.y,
       heading: 0, desiredHeading: 0, throttle: 0,
       events: [], nextSpawnAt: performance.now() + rand(1500, 2500),
+      hintsShown: {},
     };
 
     setupJoystick(
@@ -235,7 +278,7 @@ function renderFinaleMission(container, config, callbacks) {
     );
 
     function worldToScreen(wx, wy) {
-      return { x: SCREEN_ANCHOR.x + (wx - m.x), y: SCREEN_ANCHOR.y + (wy - m.y) };
+      return { x: SCREEN_ANCHOR.x + (wx - m.x) * WORLD_SCALE, y: SCREEN_ANCHOR.y + (wy - m.y) * WORLD_SCALE };
     }
 
     function showBanner(text) {
@@ -274,6 +317,23 @@ function renderFinaleMission(container, config, callbacks) {
       const remaining = Math.hypot(WORLD_GOAL.x - m.x, WORLD_GOAL.y - m.y);
       const progress = clamp01(1 - remaining / TOTAL_DIST);
       els.progressEl.textContent = Math.round(progress * 100) + "%";
+
+      const bearingToGoal = normalizeAngle(Math.atan2(WORLD_GOAL.x - m.x, -(WORLD_GOAL.y - m.y)) * 180 / Math.PI);
+      els.goalArrow.style.transform = `rotate(${bearingToGoal}deg)`;
+      els.goalVal.textContent = compassDir(bearingToGoal);
+
+      // Kurze, einmalige Hinweise entlang der Strecke statt einer langen Anleitung am Anfang -
+      // der Spieler weiß so unterwegs immer, worauf als Nächstes zu achten ist.
+      if (progress > 0.12 && !m.hintsShown.p1) {
+        m.hintsShown.p1 = true;
+        showBanner("🧭 Grüner Pfeil oben zeigt zur Ziel-Boje");
+      } else if (progress > 0.5 && !m.hintsShown.p2) {
+        m.hintsShown.p2 = true;
+        showBanner("⛵ Halbzeit – bei Begegnungen auf Vorfahrt achten");
+      } else if (progress > 0.85 && !m.hintsShown.p3) {
+        m.hintsShown.p3 = true;
+        showBanner("🏁 Gleich geschafft!");
+      }
 
       const mmx = 30 + clamp((m.x / (WORLD_GOAL.x || 1)) * 12, -26, 26);
       const mmy = 55 - clamp((Math.max(0, -m.y) / Math.max(1, -WORLD_GOAL.y)) * 50, 0, 50);
@@ -528,7 +588,7 @@ function renderFinaleMission(container, config, callbacks) {
       if (ev.kind === "npc") {
         html += `<g class="fin-npc fin-npc-${ev.type}" transform="translate(${s.x} ${s.y}) rotate(${ev.heading})"><polygon points="0,-9 6,7 0,3 -6,7" /></g>`;
       } else if (ev.kind === "zone") {
-        html += `<circle class="fin-zone fin-zone-${ev.type}" cx="${s.x}" cy="${s.y}" r="${ev.radius}" />`;
+        html += `<circle class="fin-zone fin-zone-${ev.type}" cx="${s.x}" cy="${s.y}" r="${ev.radius * WORLD_SCALE}" />`;
       } else if (ev.kind === "point") {
         html += `<circle class="fin-point fin-point-${ev.type}" cx="${s.x}" cy="${s.y}" r="7" />`;
       }
