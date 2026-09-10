@@ -2,7 +2,7 @@
 // Bibliothek von der CDN), damit bei kurzzeitig schwachem Netz am Strand nicht die ganze
 // Seite leer bleibt. Supabase-RPC-Aufrufe selbst werden nie abgefangen oder gecacht -
 // Spielstand und Punkte müssen immer live vom Server kommen.
-const CACHE_NAME = "brouwersdam-shell-v1";
+const CACHE_NAME = "brouwersdam-shell-v2";
 const SUPABASE_JS_URL = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js";
 
 const PRECACHE_URLS = [
@@ -62,7 +62,11 @@ self.addEventListener("fetch", (event) => {
   if (!sameOrigin && req.url !== SUPABASE_JS_URL) return; // Supabase-API & Drittes unangetastet lassen
 
   event.respondWith(
-    fetch(req)
+    // "no-cache" statt Standard-Fetch: erzwingt eine Revalidierung beim Server (nicht
+    // "no-store", das würde jedes Mal komplett neu laden) - sonst könnte der Browser eine
+    // veraltete HTTP-Cache-Antwort liefern und das "network-first" liefe ins Leere, weil
+    // gar keine echte Netzwerkanfrage rausgeht.
+    fetch(req, { cache: "no-cache" })
       .then((res) => {
         const copy = res.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
