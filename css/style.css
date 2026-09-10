@@ -965,6 +965,43 @@ p { margin: 0; }
 .fin-minimap-goal { fill: var(--success); }
 .fin-minimap-player { fill: #60a5fa; stroke: #fff; stroke-width: 0.6; }
 
+.fin-wind-badge {
+  position: absolute;
+  bottom: 10px; left: 10px;
+  width: 80px; height: 80px;
+  z-index: 3;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--card-border-hover);
+  box-shadow: var(--shadow-lift);
+  background: rgba(10,20,36,0.55);
+}
+.fin-wind-badge-tag {
+  position: absolute;
+  top: 3px; left: 5px;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.65);
+  z-index: 1;
+  pointer-events: none;
+}
+.fin-wind-badge-val {
+  position: absolute;
+  bottom: 3px; left: 0; right: 0;
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+  pointer-events: none;
+}
+.fin-wind-compass-bg { fill: rgba(10,20,36,0.4); stroke: rgba(96,165,250,0.35); stroke-width: 1.5; }
+.fin-wind-compass-shaft { stroke: #60a5fa; stroke-width: 3; stroke-dasharray: 3 3; }
+.fin-wind-compass-head { fill: #60a5fa; stroke: #fff; stroke-width: 1.2; }
+
 .fin-event-banner {
   fill: var(--text);
   font-size: 12px;
@@ -1242,6 +1279,7 @@ p { margin: 0; }
 .theorie-quiz .tq-row-scene-box { display: flex; justify-content: center; margin-top: 16px; }
 .theorie-quiz .tq-row-scene { width: 100%; max-width: 320px; height: auto; }
 .theorie-quiz .tq-row-water { fill: #dceefb; stroke: var(--tq-border); stroke-width: 1.5; }
+.theorie-quiz .tq-row-wind-badge { fill: rgba(20,60,100,0.08); stroke: var(--tq-accent-dark); stroke-width: 1.5; stroke-dasharray: 4 3; }
 .theorie-quiz .tq-row-wind-shaft { stroke: var(--tq-accent-dark); stroke-width: 2; stroke-dasharray: 3 3; }
 .theorie-quiz .tq-row-wind { fill: var(--tq-accent-dark); stroke: #ffffff; stroke-width: 1.2; }
 .theorie-quiz .tq-row-wind-label { fill: var(--tq-accent-dark); font-size: 11px; font-weight: 800; text-anchor: middle; }

@@ -65,14 +65,7 @@ function renderFinaleMission(container, config, callbacks) {
       <div class="ws-hud-item"><span class="ws-hud-label">Punkte</span><span class="ws-hud-val accent" id="fin-score">–</span></div>
       <div class="ws-hud-item"><span class="ws-hud-label">Fortschritt</span><span class="ws-hud-val" id="fin-progress">0%</span></div>
     </div>
-    <div class="ws-hud" id="fin-hud2" hidden style="grid-template-columns:1fr 1fr 1fr;">
-      <div class="ws-hud-item">
-        <span class="ws-hud-label">Wind</span>
-        <span class="ws-hud-wind-row">
-          <svg class="ws-wind-arrow" id="fin-wind-arrow" viewBox="0 0 24 24"><path d="M12 2 L17 14 L12 10.5 L7 14 Z"/></svg>
-          <span class="ws-hud-val" id="fin-wind-val">–</span>
-        </span>
-      </div>
+    <div class="ws-hud" id="fin-hud2" hidden style="grid-template-columns:1fr 1fr;">
       <div class="ws-hud-item">
         <span class="ws-hud-label">Kompass</span>
         <span class="ws-hud-wind-row">
@@ -95,8 +88,6 @@ function renderFinaleMission(container, config, callbacks) {
   els.time = container.querySelector("#fin-time");
   els.scoreEl = container.querySelector("#fin-score");
   els.progressEl = container.querySelector("#fin-progress");
-  els.windArrow = container.querySelector("#fin-wind-arrow");
-  els.windVal = container.querySelector("#fin-wind-val");
   els.headingArrow = container.querySelector("#fin-heading-arrow");
   els.headingVal = container.querySelector("#fin-heading-val");
   els.goalArrow = container.querySelector("#fin-goal-arrow");
@@ -125,7 +116,9 @@ function renderFinaleMission(container, config, callbacks) {
     state.lastWindTick = now;
     const effStrength = clamp(state.windStrength + (now < state.gustUntil ? state.gustBoost : 0), 0, 6);
     els.windVal.textContent = `${compassDir(state.windAngle)} · ${effStrength.toFixed(1)}/6`;
-    els.windArrow.style.transform = `rotate(${state.windAngle}deg)`;
+    // Der Wind-Pfeil ist eine <g> mit fixer translate(30 30) fürs Badge-Zentrum - per
+    // Attribut statt CSS-transform drehen, sonst würde die Translation überschrieben.
+    els.windArrow.setAttribute("transform", `translate(30 30) rotate(${state.windAngle})`);
     els.headingArrow.style.transform = `rotate(${playerHeading}deg)`;
     els.headingVal.textContent = compassDir(playerHeading);
 
@@ -235,6 +228,17 @@ function renderFinaleMission(container, config, callbacks) {
           <span class="fin-mini-map-tag">Karte</span>
           <svg viewBox="0 0 60 60" id="fin-minimap"><rect width="60" height="60" class="fin-minimap-bg"/><line x1="30" y1="54" x2="30" y2="6" class="fin-minimap-route"/><g id="fin-minimap-goal"></g><circle id="fin-minimap-player" cx="30" cy="55" r="2.6" class="fin-minimap-player"/></svg>
         </div>
+        <div class="fin-wind-badge">
+          <span class="fin-wind-badge-tag">Wind</span>
+          <svg viewBox="0 0 60 60" id="fin-wind-compass">
+            <circle cx="30" cy="30" r="26" class="fin-wind-compass-bg" />
+            <g id="fin-wind-compass-arrow" transform="translate(30 30)">
+              <line x1="0" y1="-18" x2="0" y2="13" class="fin-wind-compass-shaft" />
+              <path d="M0,-20 L7,-6 L0,-9.5 L-7,-6 Z" class="fin-wind-compass-head" />
+            </g>
+          </svg>
+          <span class="fin-wind-badge-val" id="fin-wind-val">–</span>
+        </div>
         <svg class="ws-scene" viewBox="0 0 ${SCENE_W} ${SCENE_H}" id="fin-svg">
           <rect x="0" y="0" width="${SCENE_W}" height="${SCENE_H}" class="ws-water" />
           <g id="fin-world"></g>
@@ -259,6 +263,10 @@ function renderFinaleMission(container, config, callbacks) {
     const minimapPlayer = els.stage.querySelector("#fin-minimap-player");
     const minimapGoal = els.stage.querySelector("#fin-minimap-goal");
     minimapGoal.innerHTML = `<circle cx="30" cy="5" r="2.6" class="fin-minimap-goal" />`;
+    // Wind bekommt hier ein grosses, festes Kompass-Badge auf der Karte statt eines kleinen
+    // HUD-Icons - bei voller Karte + Joystick war da oben sonst kaum noch Platz dafuer.
+    els.windArrow = els.stage.querySelector("#fin-wind-compass-arrow");
+    els.windVal = els.stage.querySelector("#fin-wind-val");
 
     const m = {
       x: WORLD_START.x, y: WORLD_START.y,
