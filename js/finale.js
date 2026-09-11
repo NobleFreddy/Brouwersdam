@@ -118,7 +118,9 @@ function renderFinaleMission(container, config, callbacks) {
     els.windVal.textContent = `${compassDir(state.windAngle)} · ${effStrength.toFixed(1)}/6`;
     // Der Wind-Pfeil ist eine <g> mit fixer translate(30 30) fürs Badge-Zentrum - per
     // Attribut statt CSS-transform drehen, sonst würde die Translation überschrieben.
-    els.windArrow.setAttribute("transform", `translate(30 30) rotate(${state.windAngle})`);
+    // +180: Pfeilspitze zeigt wohin der Wind bläst, nicht woher (windAngle bleibt die
+    // Herkunftsrichtung, die tackOf()/evaluateEncounter() für die Vorfahrt verwenden).
+    els.windArrow.setAttribute("transform", `translate(30 30) rotate(${state.windAngle + 180})`);
     els.headingArrow.style.transform = `rotate(${playerHeading}deg)`;
     els.headingVal.textContent = compassDir(playerHeading);
 

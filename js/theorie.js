@@ -106,7 +106,9 @@ function renderTheorieQuiz(container, onFinish) {
         <svg class="tq-row-scene" viewBox="0 0 200 220" id="tq-row-svg">
           <rect x="6" y="6" width="188" height="208" rx="14" class="tq-row-water" />
           <circle cx="100" cy="30" r="25" class="tq-row-wind-badge" />
-          <g transform="translate(100 30) rotate(${q.windFrom})">
+          <!-- +180: Pfeilspitze zeigt wohin der Wind bläst, nicht woher (windFrom bleibt die
+               Herkunftsrichtung, die die Steuerbord/Backbord-Regeln unten verwenden). -->
+          <g transform="translate(100 30) rotate(${q.windFrom + 180})">
             <line x1="0" y1="-21" x2="0" y2="12" class="tq-row-wind-shaft" />
             <path d="M0,-23 L8,-7 L0,-11.5 L-8,-7 Z" class="tq-row-wind" />
           </g>

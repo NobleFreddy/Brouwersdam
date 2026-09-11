@@ -108,7 +108,9 @@ function renderWindsurfSim(container, dayTitle, onFinish) {
       state.windAngle = normalizeAngle(state.windStart + state.windSpeed * (elapsedMs / 1000));
     }
     els.hudWind.textContent = compassDir(state.windAngle);
-    els.hudArrow.style.transform = `rotate(${state.windAngle}deg)`;
+    // +180: Pfeilspitze zeigt wohin der Wind bläst, nicht woher (windAngle bleibt die
+    // Herkunftsrichtung, die speedFactor()/angularDistance() weiterhin verwenden).
+    els.hudArrow.style.transform = `rotate(${state.windAngle + 180}deg)`;
 
     const dt = state.lastTick ? (now - state.lastTick) / 1000 : 0;
     state.lastTick = now;
@@ -440,7 +442,7 @@ function renderWindsurfSim(container, dayTitle, onFinish) {
 
     state.onTick = (dt) => {
       if (dt <= 0) return;
-      windArrowEl.setAttribute("transform", `rotate(${state.windAngle})`);
+      windArrowEl.setAttribute("transform", `rotate(${state.windAngle + 180})`);
       windLabelEl.textContent = `Wind: ${compassDir(state.windAngle)}`;
 
       p2.heading = lerpAngle(p2.heading, p2.desiredHeading, Math.min(1, dt * 4));
@@ -562,7 +564,7 @@ function renderWindsurfSim(container, dayTitle, onFinish) {
         </g>
         <g class="ws3-windbox" transform="translate(38 38)">
           <circle r="26" />
-          <g transform="rotate(${frozenWind})"><path d="M0,-16 L6,2 L0,-3.5 L-6,2 Z" /></g>
+          <g transform="rotate(${frozenWind + 180})"><path d="M0,-16 L6,2 L0,-3.5 L-6,2 Z" /></g>
         </g>
         <text x="38" y="75" class="ws-zone-label" style="fill:var(--text-muted);">Wind: fest · ${compassDir(frozenWind)}</text>
       </svg>

@@ -214,7 +214,9 @@ function renderMinigame(container, dayTitle, onFinish) {
     scheduleGusts();
     startTime = performance.now();
     windAngle = windStart;
-    els.windArrow.setAttribute("transform", `rotate(${windAngle} 110 110)`);
+    // +180: Pfeilspitze zeigt wohin der Wind bläst, nicht woher (windAngle bleibt die
+    // Herkunftsrichtung, die optimalAt()/currentOptimal() weiterhin verwenden).
+    els.windArrow.setAttribute("transform", `rotate(${windAngle + 180} 110 110)`);
     els.windLabel.textContent = `${Math.round(windAngle)}° ${compassDir(windAngle)}`;
     refreshBadge();
     sampleIntervalId = setInterval(sampleScore, 200);
@@ -234,7 +236,7 @@ function renderMinigame(container, dayTitle, onFinish) {
     const elapsed = now - startTime;
 
     windAngle = normalizeAngle(windStart + windSpeed * (elapsed / 1000));
-    els.windArrow.setAttribute("transform", `rotate(${windAngle} 110 110)`);
+    els.windArrow.setAttribute("transform", `rotate(${windAngle + 180} 110 110)`);
     els.windLabel.textContent = `${Math.round(windAngle)}° ${compassDir(windAngle)}`;
     refreshBadge();
 
