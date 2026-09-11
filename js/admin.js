@@ -258,8 +258,9 @@ function dayCardHtml(day) {
         <div class="field">
           <label class="field-checkbox-label">
             <input type="checkbox" class="field-auto-unlock" ${day.auto_unlock ? "checked" : ""} />
-            Automatisch öffnen, sobald der Öffnungszeitpunkt erreicht ist (kein Sticker-Code nötig)
+            Als Sicherheitsnetz automatisch öffnen (kein Code nötig), falls 1 Tag nach dem Öffnungszeitpunkt noch niemand den Sticker-Code eingegeben hat
           </label>
+          <div class="field-hint">Der Sticker-Code bleibt der normale Weg (inkl. Tages-Bonus bei prompter Eingabe) – das hier greift erst einen Tag später als Fallback.</div>
         </div>
         <div class="field" style="display:flex; align-items:center; gap:10px;">
           <button class="btn btn-primary save-day-btn" type="button">Speichern</button>

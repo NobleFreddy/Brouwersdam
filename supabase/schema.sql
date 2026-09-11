@@ -280,15 +280,20 @@ declare
   v_days jsonb;
   v_rank int;
 begin
-  -- Auto-Freischaltung: Tage mit auto_unlock=true schalten sich beim Laden von selbst
-  -- frei, sobald opens_at erreicht ist (oder sofort, falls opens_at leer ist) - ohne
-  -- dass der Spieler einen Sticker-Code eingeben muss. Betrifft nur Tage, die für diesen
+  -- Auto-Freischaltung (Sicherheitsnetz): der Sticker-Code bleibt der normale Weg, einen
+  -- Tag freizuschalten (inkl. Tages-Bonus bei prompter Eingabe). Erst wenn ein Spieler das
+  -- einen vollen Tag nach der offiziellen Öffnung (opens_at) immer noch nicht getan hat,
+  -- schaltet sich der Tag bei auto_unlock=true beim nächsten Laden von selbst frei - ohne
+  -- Code -, damit niemand dauerhaft ausgesperrt bleibt (z. B. weil der Sticker vor Ort schon
+  -- weg ist). Ohne gesetztes opens_at gibt es keinen Bezugspunkt für "einen Tag danach",
+  -- daher greift die Auto-Freischaltung dann nicht. Betrifft nur Tage, die für diesen
   -- Spieler noch nicht freigeschaltet sind; bereits (per Code) unlockte Tage bleiben unangetastet.
   insert into player_days (player_id, day_id, unlocked_at, attempts)
   select v_player_id, d.id, now(), 0
   from days d
   where d.auto_unlock
-    and (d.opens_at is null or d.opens_at <= now())
+    and d.opens_at is not null
+    and d.opens_at + interval '1 day' <= now()
     and not exists (
       select 1 from player_days pd
       where pd.player_id = v_player_id and pd.day_id = d.id and pd.unlocked_at is not null
