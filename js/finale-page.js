@@ -70,7 +70,7 @@ async function initFinalePage() {
           showToast(friendlyError(submitError), "error");
           return;
         }
-        showToast(`Eingereicht! +${result.pointsAwarded} Punkte`, "success");
+        showToast(`Eingereicht! +${result.pointsAwarded} Punkte${bonusSuffix(result)}`, "success");
         window.location.href = "mein-bereich.html";
       },
     }

@@ -41,12 +41,16 @@ create table if not exists days (
   base_points         int not null default 10,
   bonus_points        int not null default 5,
   bonus_window_seconds int not null default 120,       -- Schnell-Bonus-Fenster ab Freischaltung
+  same_day_bonus_points int not null default 0,        -- Bonus, wenn am Öffnungstag (Datum von opens_at) gelöst
+  auto_unlock         boolean not null default false,  -- true: Tag öffnet sich selbst (opens_at), kein Sticker-Code nötig
   finale_material_photo text,                          -- Foto für den Materialcheck an Tag 5 (base64 data-URL)
   updated_at          timestamptz not null default now()
 );
 -- "create table if not exists" legt die Spalte oben nur bei einer brandneuen Tabelle an;
 -- bei einem bereits bestehenden days (wie in der Live-Datenbank) muss sie explizit ergänzt werden.
 alter table days add column if not exists finale_material_photo text;
+alter table days add column if not exists same_day_bonus_points int not null default 0;
+alter table days add column if not exists auto_unlock boolean not null default false;
 
 create table if not exists player_days (
   player_id       uuid not null references players(id) on delete cascade,
@@ -276,6 +280,21 @@ declare
   v_days jsonb;
   v_rank int;
 begin
+  -- Auto-Freischaltung: Tage mit auto_unlock=true schalten sich beim Laden von selbst
+  -- frei, sobald opens_at erreicht ist (oder sofort, falls opens_at leer ist) - ohne
+  -- dass der Spieler einen Sticker-Code eingeben muss. Betrifft nur Tage, die für diesen
+  -- Spieler noch nicht freigeschaltet sind; bereits (per Code) unlockte Tage bleiben unangetastet.
+  insert into player_days (player_id, day_id, unlocked_at, attempts)
+  select v_player_id, d.id, now(), 0
+  from days d
+  where d.auto_unlock
+    and (d.opens_at is null or d.opens_at <= now())
+    and not exists (
+      select 1 from player_days pd
+      where pd.player_id = v_player_id and pd.day_id = d.id and pd.unlocked_at is not null
+    )
+  on conflict (player_id, day_id) do update set unlocked_at = now();
+
   select * into v_player from players where id = v_player_id;
 
   select coalesce(jsonb_agg(day_obj order by x.sort_order), '[]'::jsonb) into v_days
@@ -290,6 +309,7 @@ begin
         'id', d.id, 'sortOrder', d.sort_order, 'title', d.title, 'teaser', d.teaser,
         'opensAt', d.opens_at, 'puzzleType', d.puzzle_type,
         'basePoints', d.base_points, 'bonusPoints', d.bonus_points, 'bonusWindowSeconds', d.bonus_window_seconds,
+        'sameDayBonusPoints', d.same_day_bonus_points,
         'unlockedAt', pd.unlocked_at, 'solvedAt', pd.solved_at, 'attempts', coalesce(pd.attempts, 0),
         'pointsAwarded', coalesce(pd.points_awarded, 0),
         'puzzleQuestion', case when pd.unlocked_at is not null then d.puzzle_question else null end,
@@ -379,6 +399,7 @@ declare
   v_correct boolean;
   v_points int;
   v_within_bonus boolean;
+  v_same_day_bonus boolean;
 begin
   select * into v_day from days where id = p_day_id;
   select * into v_pd from player_days where player_id = v_player_id and day_id = p_day_id;
@@ -398,7 +419,15 @@ begin
   end if;
 
   v_within_bonus := (extract(epoch from (now() - v_pd.unlocked_at)) <= v_day.bonus_window_seconds);
-  v_points := v_day.base_points + (case when v_within_bonus then v_day.bonus_points else 0 end);
+  -- Tages-Bonus: Datumsvergleich in Europe/Amsterdam (Eventzeitzone), nicht UTC, damit ein
+  -- Lösen kurz vor/nach Mitternacht Ortszeit richtig demselben Kalendertag zugeordnet wird.
+  v_same_day_bonus := (
+    v_day.opens_at is not null
+    and (now() at time zone 'Europe/Amsterdam')::date = (v_day.opens_at at time zone 'Europe/Amsterdam')::date
+  );
+  v_points := v_day.base_points
+    + (case when v_within_bonus then v_day.bonus_points else 0 end)
+    + (case when v_same_day_bonus then v_day.same_day_bonus_points else 0 end);
 
   update player_days
   set solved_at = now(), points_awarded = v_points, attempts = attempts + 1
@@ -406,7 +435,10 @@ begin
 
   update players set points = points + v_points where id = v_player_id;
 
-  return jsonb_build_object('correct', true, 'alreadySolved', false, 'pointsAwarded', v_points, 'bonusApplied', v_within_bonus);
+  return jsonb_build_object(
+    'correct', true, 'alreadySolved', false, 'pointsAwarded', v_points,
+    'bonusApplied', v_within_bonus, 'sameDayBonusApplied', v_same_day_bonus
+  );
 end;
 $$;
 
@@ -428,6 +460,7 @@ declare
   v_perf numeric;
   v_points int;
   v_within_bonus boolean;
+  v_same_day_bonus boolean;
 begin
   select * into v_day from days where id = p_day_id;
   select * into v_pd from player_days where player_id = v_player_id and day_id = p_day_id;
@@ -448,7 +481,15 @@ begin
 
   v_perf := greatest(0, least(1, coalesce(p_performance, 0)));
   v_within_bonus := (extract(epoch from (now() - v_pd.unlocked_at)) <= v_day.bonus_window_seconds);
-  v_points := round(v_day.base_points * v_perf) + (case when v_within_bonus and v_perf >= 0.8 then v_day.bonus_points else 0 end);
+  -- Tages-Bonus: Datumsvergleich in Europe/Amsterdam (Eventzeitzone), nicht UTC, damit ein
+  -- Lösen kurz vor/nach Mitternacht Ortszeit richtig demselben Kalendertag zugeordnet wird.
+  v_same_day_bonus := (
+    v_day.opens_at is not null
+    and (now() at time zone 'Europe/Amsterdam')::date = (v_day.opens_at at time zone 'Europe/Amsterdam')::date
+  );
+  v_points := round(v_day.base_points * v_perf)
+    + (case when v_within_bonus and v_perf >= 0.8 then v_day.bonus_points else 0 end)
+    + (case when v_same_day_bonus and v_perf >= 0.8 then v_day.same_day_bonus_points else 0 end);
 
   update player_days
   set solved_at = now(), points_awarded = v_points, attempts = attempts + 1
@@ -456,7 +497,10 @@ begin
 
   update players set points = points + v_points where id = v_player_id;
 
-  return jsonb_build_object('correct', true, 'alreadySolved', false, 'pointsAwarded', v_points, 'performance', v_perf);
+  return jsonb_build_object(
+    'correct', true, 'alreadySolved', false, 'pointsAwarded', v_points, 'performance', v_perf,
+    'bonusApplied', v_within_bonus and v_perf >= 0.8, 'sameDayBonusApplied', v_same_day_bonus and v_perf >= 0.8
+  );
 end;
 $$;
 
@@ -631,7 +675,8 @@ create or replace function admin_update_day(
   p_token uuid, p_day_id int, p_title text, p_teaser text, p_code text, p_opens_at timestamptz,
   p_puzzle_type text, p_puzzle_question text, p_puzzle_choices jsonb, p_puzzle_answer text,
   p_base_points int, p_bonus_points int, p_bonus_window_seconds int,
-  p_finale_material_photo text default null
+  p_finale_material_photo text default null,
+  p_same_day_bonus_points int default 0, p_auto_unlock boolean default false
 )
 returns void
 language plpgsql
@@ -664,12 +709,14 @@ begin
     bonus_points = p_bonus_points,
     bonus_window_seconds = p_bonus_window_seconds,
     finale_material_photo = p_finale_material_photo,
+    same_day_bonus_points = p_same_day_bonus_points,
+    auto_unlock = p_auto_unlock,
     updated_at = now()
   where id = p_day_id;
 end;
 $$;
 
-grant execute on function admin_update_day(uuid, int, text, text, text, timestamptz, text, text, jsonb, text, int, int, int, text) to anon;
+grant execute on function admin_update_day(uuid, int, text, text, text, timestamptz, text, text, jsonb, text, int, int, int, text, int, boolean) to anon;
 
 create or replace function admin_reset_player(p_token uuid, p_player_id uuid)
 returns void

@@ -250,6 +250,17 @@ function dayCardHtml(day) {
           <label>Schnell-Bonus-Fenster (Sekunden nach Freischaltung)</label>
           <input type="number" class="field-bonus-window" min="0" value="${day.bonus_window_seconds}" />
         </div>
+        <div class="field">
+          <label>Tages-Bonus (zusätzlich, wenn am Öffnungstag gelöst)</label>
+          <input type="number" class="field-same-day-bonus-points" min="0" value="${day.same_day_bonus_points || 0}" />
+          <div class="field-hint">Nur wirksam, wenn oben ein Öffnungszeitpunkt gesetzt ist – Vergleich nach Kalendertag, nicht nach Uhrzeit.</div>
+        </div>
+        <div class="field">
+          <label class="field-checkbox-label">
+            <input type="checkbox" class="field-auto-unlock" ${day.auto_unlock ? "checked" : ""} />
+            Automatisch öffnen, sobald der Öffnungszeitpunkt erreicht ist (kein Sticker-Code nötig)
+          </label>
+        </div>
         <div class="field" style="display:flex; align-items:center; gap:10px;">
           <button class="btn btn-primary save-day-btn" type="button">Speichern</button>
           <span class="field-hint save-status"></span>
@@ -279,6 +290,8 @@ async function saveDayEdit(dayId, root) {
     p_bonus_points: Number(root.querySelector(".field-bonus-points").value) || 0,
     p_bonus_window_seconds: Number(root.querySelector(".field-bonus-window").value) || 0,
     p_finale_material_photo: type === "finale" ? (root._finaleMaterialPhoto || null) : null,
+    p_same_day_bonus_points: Number(root.querySelector(".field-same-day-bonus-points").value) || 0,
+    p_auto_unlock: root.querySelector(".field-auto-unlock").checked,
   };
 
   const status = root.querySelector(".save-status");

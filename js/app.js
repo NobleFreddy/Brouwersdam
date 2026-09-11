@@ -93,6 +93,16 @@ function renderFooter() {
   `;
 }
 
+// Baut den "(mit Schnell-Bonus + Tages-Bonus)"-Zusatz für Erfolgs-Toasts nach dem Lösen -
+// gemeinsam genutzt von mein-bereich.js und den *-page.js-Dateien (submit_answer/
+// submit_minigame_result liefern beide bonusApplied/sameDayBonusApplied).
+function bonusSuffix(data) {
+  const notes = [];
+  if (data.bonusApplied) notes.push("Schnell-Bonus");
+  if (data.sameDayBonusApplied) notes.push("Tages-Bonus");
+  return notes.length ? ` (mit ${notes.join(" + ")})` : "";
+}
+
 function formatDate(iso) {
   if (!iso) return "";
   const d = new Date(iso);

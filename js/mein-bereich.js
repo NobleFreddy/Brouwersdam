@@ -254,7 +254,7 @@ async function submitAnswer(dayId, answer, wrap) {
     showToast("Leider falsch – versuch's nochmal.", "error");
     return;
   }
-  showToast(`Richtig! +${data.pointsAwarded} Punkte${data.bonusApplied ? " (mit Schnell-Bonus)" : ""}`, "success");
+  showToast(`Richtig! +${data.pointsAwarded} Punkte${bonusSuffix(data)}`, "success");
   await loadState();
 }
 
